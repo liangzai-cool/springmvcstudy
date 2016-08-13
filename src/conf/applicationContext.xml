@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" -->
+<!--         "http://www.springframework.org/dtd/spring-beans-2.0.dtd"> -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- 定义dataSource -->
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+	    <property name="driverClassName" value="${jdbc.driverClassName}"/>
+	    <property name="url" value="${jdbc.url}"/>
+	    <property name="username" value="${jdbc.username}"/>
+	    <property name="password" value="${jdbc.password}"/>
+	</bean>
+	
+	<!-- 定义jdbcTemplate -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+	    <property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	<!-- 定义dao 抽象父类用于其它类使用 -->
+	<bean id="dao" abstract="true">
+		<property name="jdbcTemplate" ref="jdbcTemplate"/>
+	</bean>
+	
+	<!--DAO -->
+	<bean id="customerDao" class="com.test.dao.impl.CustomerDaoImpl" parent="dao"></bean>
+	<bean id="adminDao" class="com.test.dao.impl.AdminDaoImpl" parent="dao"></bean>
+	
+	<!-- Service -->
+	<bean id="customerService" class="com.test.service.impl.CustomerServiceImpl">
+		<property name="custDao" ref="customerDao"></property>
+	</bean>
+	<bean id="adminService" class="com.test.service.impl.AdminServiceImpl">
+		<property name="adao" ref="adminDao"></property>
+	</bean>
+	
+	<!-- Controller -->
+	<bean id="/customer.htm" class="com.test.controller.CustomerController">
+		<property name="custSer" ref="customerService"></property>
+		<property name="methodNameResolver" ref="methodNameResolver"></property>
+	</bean>
+	<bean id="/admin.htm" class="com.test.controller.AdminController">
+		<property name="adminSer" ref="adminService"></property>
+		<property name="methodNameResolver" ref="methodNameResolver"></property>
+	</bean>
+	<bean name="methodNameResolver" class="org.springframework.web.servlet.mvc.multiaction.ParameterMethodNameResolver">
+		<property name="paramName" value="action"/>
+	</bean>
+	
+	<!-- Interceptor -->
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/customer.htm"/>
+			<bean class="com.test.interceptor.LoginInterceptor"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	
+	
+<!-- 	<bean id="handlerMapping" class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"> -->
+<!-- 		<property name="interceptors"> -->
+<!-- 			<list> -->
+<!-- 				<ref bean="loginInterceptor"/> -->
+<!-- 			</list> -->
+<!-- 		</property> -->
+<!-- 	</bean> -->
+<!-- 	<bean id="loginInterceptor" class="com.test.interceptor.LoginInterceptor"> -->
+<!-- 		<property name="mappingURL" value="*.action=list"></property> -->
+<!-- 	</bean> -->
+	
+	<context:property-placeholder location="classpath:/conf/jdbc.properties"/>
+</beans>
